@@ -11,12 +11,27 @@ use std::env::args;
 
 use crate::core::app;
 
+use chrono::prelude::*;
+use chrono::offset::LocalResult;
+use std::{thread, time};
+
 fn main() {
     env_logger::init();
 
     if let Ok(_) = gtk::init() {
-        app::App::run();
-        gtk::main();
+    //    app::App::run();
+    //    gtk::main();
+    }
+
+    thread::sleep(time::Duration::from_millis(500));
+
+    let pivot = chrono::Local::now().timestamp_millis();
+
+    loop {
+        let current = chrono::Local::now().timestamp_millis() - pivot;
+        let sec_unit = current/1000;
+        let under_sec = current/10;
+        println!("{}.{} seconds passed..", current/1000, under_sec - sec_unit*10);
     }
 
     /*

@@ -1,48 +1,63 @@
-extern crate gio;
-extern crate gtk;
+use std::rc::Rc;
+use std::cell::Cell;
 
-mod core;
-mod ui;
+use glib;
+use glib_macros::clone;
+use gtk::{prelude::*, Orientation};
+use gtk::{Application, ApplicationWindow, Button};
 
-use gio::prelude::*;
-use gtk::prelude::*;
+const APPLICATION_ID : &str = "org.troll.one_hour";
 
-use std::env::args;
-
-use crate::core::app;
-
-use chrono::prelude::*;
-use chrono::offset::LocalResult;
-use std::{thread, time};
+/*
+    Widget gallery : https://docs.gtk.org/gtk4/visual_index.html
+    
+*/
 
 fn main() {
-    env_logger::init();
+    let app = Application::builder()
+    .application_id(APPLICATION_ID)
+    .build();
 
-    if let Ok(_) = gtk::init() {
-    //    app::App::run();
-    //    gtk::main();
-    }
+    app.connect_activate(build_ui);
 
-    thread::sleep(time::Duration::from_millis(500));
+    app.run();
+}
 
-    let pivot = chrono::Local::now().timestamp_millis();
+fn build_ui(app : &Application) {
+    let inc_button = Button::builder()
+        .label("Increase")
+        .build();
 
-    loop {
-        let current = chrono::Local::now().timestamp_millis() - pivot;
-        let sec_unit = current/1000;
-        let under_sec = current/10;
-        println!("{}.{} seconds passed..", current/1000, under_sec - sec_unit*10);
-    }
+    let dec_button = Button::builder()
+        .label("Decrease")
+        .build();
 
-    /*
-    let application =
-        gtk::Application::new(Some("com.open.onehour.timer"), Default::default())
-            .expect("Initialization failed...");
+    let num = Rc::new(Cell::new(0));
 
-    application.connect_activate(|app| {
-        build_ui(app);
-    });
+    inc_button.connect_clicked(clone!(@weak num, @weak dec_button => 
+        move |_| {
+            num.set(num.get() + 1);
+            dec_button.set_label(&num.get().to_string());
+    }));
 
-    application.run(&args().collect::<Vec<_>>());
-    */
+    dec_button.connect_clicked(clone!(@weak inc_button => 
+        move |_| {
+            num.set(num.get() - 1);
+            inc_button.set_label(&num.get().to_string());
+    }));
+
+    let gtk_box = gtk::Box::builder()
+        .orientation(Orientation::Vertical)
+        .build();
+
+    gtk_box.append(&inc_button);
+    gtk_box.append(&dec_button);
+
+    let win = ApplicationWindow::builder()
+        .application(app)
+        .title("One Hour")
+        .child(&gtk_box)
+        .build();
+
+    win.present();
 }
